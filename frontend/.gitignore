@@ -1,0 +1,7 @@
+node_modules
+dist
+.env
+*.log
+# Modèles face-api.js téléchargés via `npm run download-models`
+public/models/*
+!public/models/.gitkeep
