@@ -2,6 +2,7 @@ import {
   ArrayMaxSize,
   ArrayMinSize,
   IsArray,
+  IsBoolean,
   IsEnum,
   IsInt,
   IsNumber,
@@ -25,6 +26,11 @@ export class RecognizeDto {
   @IsOptional()
   @IsEnum(AttendanceDirection)
   direction?: AttendanceDirection;
+
+  /** Atteste qu'une preuve de vivacité (anti-spoofing) a été validée côté borne. */
+  @IsOptional()
+  @IsBoolean()
+  liveness?: boolean;
 }
 
 /** Pointage manuel : on désigne directement la personne. */

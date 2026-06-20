@@ -4,8 +4,10 @@ import {
   Get,
   Post,
   Query,
+  Req,
   UseGuards,
 } from '@nestjs/common';
+import { Request } from 'express';
 import { AttendanceService } from './attendance.service';
 import {
   DeviceAttendanceDto,
@@ -30,6 +32,16 @@ export class AttendanceController {
     @Body() dto: DeviceAttendanceDto,
   ) {
     return this.service.recordFromDevice(device, dto);
+  }
+
+  /**
+   * Pointage par image (ESP32-CAM) : corps = JPEG brut (Content-Type
+   * image/jpeg). La reconnaissance faciale est faite côté serveur.
+   */
+  @UseGuards(DeviceAuthGuard)
+  @Post('face-frame')
+  faceFrame(@CurrentDevice() device: Device, @Req() req: Request) {
+    return this.service.recognizeFromImage(device, req.body as Buffer);
   }
 
   /** Pointage par reconnaissance faciale (borne web). */

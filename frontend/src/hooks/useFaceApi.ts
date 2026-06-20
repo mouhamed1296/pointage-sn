@@ -64,3 +64,51 @@ export async function detectDescriptor(
   if (!result) return null;
   return Array.from(result.descriptor);
 }
+
+export interface FaceSample {
+  descriptor: number[];
+  /** Eye Aspect Ratio moyen (sert à la détection de clignement). */
+  ear: number;
+  /** Centre du visage normalisé (sert à la détection de mouvement). */
+  center: { x: number; y: number };
+}
+
+// Distance euclidienne 2D.
+function dist(a: faceapi.Point, b: faceapi.Point): number {
+  return Math.hypot(a.x - b.x, a.y - b.y);
+}
+
+// Eye Aspect Ratio à partir des 6 points d'un œil.
+function eyeAspectRatio(eye: faceapi.Point[]): number {
+  const a = dist(eye[1], eye[5]);
+  const b = dist(eye[2], eye[4]);
+  const c = dist(eye[0], eye[3]);
+  return c === 0 ? 0 : (a + b) / (2 * c);
+}
+
+/**
+ * Détection enrichie : descripteur + EAR + position, nécessaire à
+ * l'anti-spoofing (vivacité par clignement / mouvement).
+ */
+export async function detectFaceSample(
+  input: HTMLVideoElement | HTMLImageElement,
+): Promise<FaceSample | null> {
+  const result = await faceapi
+    .detectSingleFace(input, detectorOptions)
+    .withFaceLandmarks()
+    .withFaceDescriptor();
+  if (!result) return null;
+
+  const lm = result.landmarks;
+  const ear = (eyeAspectRatio(lm.getLeftEye()) +
+    eyeAspectRatio(lm.getRightEye())) / 2;
+  const box = result.detection.box;
+  return {
+    descriptor: Array.from(result.descriptor),
+    ear,
+    center: {
+      x: box.x + box.width / 2,
+      y: box.y + box.height / 2,
+    },
+  };
+}

@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Injectable,
   NotFoundException,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Between, FindOptionsWhere, Repository } from 'typeorm';
@@ -17,6 +18,7 @@ import {
   DeviceAttendanceDto,
 } from './dto/attendance.dto';
 import { Device } from '../devices/device.entity';
+import { FaceService } from '../face/face.service';
 import {
   AttendanceDirection,
   AttendanceStatus,
@@ -35,17 +37,73 @@ export class AttendanceService {
     private readonly personsService: PersonsService,
     private readonly modulesService: TrackingModulesService,
     private readonly realtime: RealtimeGateway,
+    private readonly faceService: FaceService,
   ) {}
+
+  /**
+   * Pointage par image envoyée depuis une borne ESP32-CAM : le descripteur est
+   * calculé côté serveur, puis comparé aux personnes enrôlées du module.
+   */
+  async recognizeFromImage(device: Device, image: Buffer) {
+    const module = await this.modulesService.findOne(device.moduleId);
+    let descriptor: number[] | null;
+    try {
+      descriptor = await this.faceService.descriptorFromImage(image);
+    } catch (e: any) {
+      if (e?.message === 'FACE_SERVER_UNAVAILABLE') {
+        throw new ServiceUnavailableException(
+          'Reconnaissance faciale serveur non disponible',
+        );
+      }
+      throw e;
+    }
+    if (!descriptor) {
+      throw new NotFoundException({
+        message: 'Aucun visage détecté dans l’image',
+        recognized: false,
+      });
+    }
+    return this.matchAndRecord(module, descriptor, PointageMethod.FACE);
+  }
 
   /** Pointage biométrique : identifie la personne puis enregistre le pointage. */
   async recognize(dto: RecognizeDto) {
     const module = await this.modulesService.findOne(dto.moduleId);
+
+    // Anti-spoofing : si le module exige une preuve de vivacité, la borne
+    // doit l'attester (clignement / mouvement détecté côté client).
+    if (module.config?.requireLiveness && !dto.liveness) {
+      throw new BadRequestException({
+        message: 'Preuve de vivacité requise',
+        livenessRequired: true,
+      });
+    }
+
+    return this.matchAndRecord(
+      module,
+      dto.descriptor,
+      PointageMethod.FACE,
+      dto.direction,
+    );
+  }
+
+  /**
+   * Compare un descripteur aux personnes enrôlées du module et enregistre le
+   * pointage de la meilleure correspondance. Mutualisé entre la borne web et
+   * la reconnaissance serveur (ESP32-CAM).
+   */
+  async matchAndRecord(
+    module: TrackingModule,
+    descriptor: number[],
+    method: PointageMethod,
+    direction?: AttendanceDirection,
+  ) {
     const threshold = module.config?.faceMatchThreshold ?? DEFAULT_THRESHOLD;
     const candidates = await this.personsService.findEnrolledByModule(
-      dto.moduleId,
+      module.id,
     );
 
-    const match = findBestMatch(dto.descriptor, candidates, threshold);
+    const match = findBestMatch(descriptor, candidates, threshold);
     if (!match) {
       throw new NotFoundException({
         message: 'Aucun visage correspondant trouvé',
@@ -54,13 +112,7 @@ export class AttendanceService {
     }
 
     const confidence = Math.max(0, 1 - match.distance);
-    return this.record(
-      match.candidate,
-      module,
-      PointageMethod.FACE,
-      confidence,
-      dto.direction,
-    );
+    return this.record(match.candidate, module, method, confidence, direction);
   }
 
   /**

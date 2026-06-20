@@ -8,7 +8,12 @@ import type {
 } from '../types';
 import { Webcam, WebcamHandle } from '../components/Webcam';
 import { CameraView, CameraHandle } from '../components/CameraView';
-import { useFaceModels, detectDescriptor } from '../hooks/useFaceApi';
+import { useFaceModels, detectFaceSample } from '../hooks/useFaceApi';
+import {
+  LivenessDetector,
+  LIVENESS_LABEL,
+  LivenessHint,
+} from '../lib/liveness';
 import { DIRECTION_LABEL, STATUS_COLOR, STATUS_LABEL } from '../lib/labels';
 
 type Mode = 'face-webcam' | 'face-camera' | 'badge' | 'code';
@@ -31,11 +36,14 @@ export function Station() {
   const [codeInput, setCodeInput] = useState('');
   const [badgeInput, setBadgeInput] = useState('');
 
+  const [livenessHint, setLivenessHint] = useState<LivenessHint | null>(null);
+
   const webcamRef = useRef<WebcamHandle>(null);
   const cameraRef = useRef<CameraHandle>(null);
   const { ready, error: modelError } = useFaceModels();
   const busyRef = useRef(false);
   const cooldownRef = useRef(0);
+  const livenessRef = useRef(new LivenessDetector());
 
   useEffect(() => {
     api.get<TrackingModule[]>('/tracking-modules').then((res) => {
@@ -59,15 +67,22 @@ export function Station() {
 
   const isFaceMode = mode === 'face-webcam' || mode === 'face-camera';
   const selectedCamera = cameras.find((c) => c.id === cameraId);
+  const selectedModule = modules.find((m) => m.id === moduleId);
+  const requireLiveness = selectedModule?.config?.requireLiveness ?? false;
 
   function showResult(data: any) {
     setResult({ ok: true, event: data.attendance });
     cooldownRef.current = Date.now() + 4000;
+    setLivenessHint(null);
+    livenessRef.current.reset();
   }
 
-  // Boucle de reconnaissance faciale (webcam ou caméra IP).
+  // Boucle de reconnaissance faciale (webcam ou caméra IP) + anti-spoofing.
   useEffect(() => {
     if (!running || !isFaceMode || !ready || !moduleId) return;
+    livenessRef.current.reset();
+    setLivenessHint(requireLiveness ? 'move' : null);
+
     const interval = setInterval(async () => {
       if (busyRef.current || Date.now() < cooldownRef.current) return;
       const el =
@@ -77,25 +92,35 @@ export function Station() {
       if (!el) return;
       busyRef.current = true;
       try {
-        const descriptor = await detectDescriptor(el);
-        if (!descriptor) return;
+        const sample = await detectFaceSample(el);
+        if (!sample) return;
+
+        // Anti-spoofing : exiger une preuve de vivacité avant de pointer.
+        if (requireLiveness) {
+          const { passed, hint } = livenessRef.current.update(sample);
+          setLivenessHint(hint);
+          if (!passed) return;
+        }
+
         const res = await api.post('/attendance/recognize', {
           moduleId,
-          descriptor,
+          descriptor: sample.descriptor,
           direction: direction || undefined,
+          liveness: requireLiveness ? true : undefined,
         });
         showResult(res.data);
       } catch (e: any) {
         if (e.response?.status === 404) {
           setResult({ ok: false, message: 'Visage non reconnu' });
           cooldownRef.current = Date.now() + 1500;
+          livenessRef.current.reset();
         }
       } finally {
         busyRef.current = false;
       }
-    }, 1500);
+    }, 700);
     return () => clearInterval(interval);
-  }, [running, isFaceMode, mode, ready, moduleId, direction]);
+  }, [running, isFaceMode, mode, ready, moduleId, direction, requireLiveness]);
 
   async function submitIdentifier(
     method: 'BADGE' | 'CODE',
@@ -270,7 +295,11 @@ export function Station() {
             </form>
           )}
           {running && isFaceMode && (
-            <div className="scanning">🔍 Détection en cours…</div>
+            <div className="scanning">
+              {requireLiveness && livenessHint
+                ? LIVENESS_LABEL[livenessHint]
+                : '🔍 Détection en cours…'}
+            </div>
           )}
         </div>
 

@@ -2,11 +2,18 @@ import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { raw } from 'express';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { cors: false });
   const config = app.get(ConfigService);
+
+  // Corps binaire pour les trames JPEG envoyées par les bornes ESP32-CAM.
+  // (Le middleware JSON par défaut ne traite que application/json.)
+  app.use(
+    raw({ type: ['image/jpeg', 'application/octet-stream'], limit: '5mb' }),
+  );
 
   const corsOrigin = config.get<string>('CORS_ORIGIN', 'http://localhost:5173');
   app.enableCors({

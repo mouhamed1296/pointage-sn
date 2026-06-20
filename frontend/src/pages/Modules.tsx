@@ -13,6 +13,7 @@ const EMPTY = {
   lateAfterMinutes: 5,
   requireCheckout: true,
   faceMatchThreshold: 0.55,
+  requireLiveness: false,
 };
 
 export function Modules() {
@@ -48,6 +49,7 @@ export function Modules() {
       lateAfterMinutes: m.config?.lateAfterMinutes ?? 5,
       requireCheckout: m.config?.requireCheckout ?? true,
       faceMatchThreshold: m.config?.faceMatchThreshold ?? 0.55,
+      requireLiveness: m.config?.requireLiveness ?? false,
     });
   }
 
@@ -64,6 +66,7 @@ export function Modules() {
         lateAfterMinutes: Number(form.lateAfterMinutes),
         requireCheckout: form.requireCheckout,
         faceMatchThreshold: Number(form.faceMatchThreshold),
+        requireLiveness: form.requireLiveness,
       },
     };
     try {
@@ -212,6 +215,17 @@ export function Modules() {
               <small className="muted">
                 Plus bas = plus strict (moins de faux positifs).
               </small>
+            </label>
+            <label className="checkbox">
+              <input
+                type="checkbox"
+                checked={form.requireLiveness}
+                onChange={(e) =>
+                  setForm({ ...form, requireLiveness: e.target.checked })
+                }
+                disabled={!isAdmin}
+              />
+              🛡️ Anti-spoofing : exiger une preuve de vivacité (FaceID)
             </label>
             {error && <div className="error">{error}</div>}
             <div className="row">

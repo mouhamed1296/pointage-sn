@@ -31,6 +31,10 @@ export class ModuleConfigDto {
 
   @IsOptional()
   faceMatchThreshold?: number;
+
+  @IsOptional()
+  @IsBoolean()
+  requireLiveness?: boolean;
 }
 
 export class CreateTrackingModuleDto {

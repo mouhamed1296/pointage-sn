@@ -24,6 +24,8 @@ export interface ModuleConfig {
   requireCheckout?: boolean;
   /** Seuil de distance euclidienne pour valider une correspondance faciale. */
   faceMatchThreshold?: number;
+  /** Exiger une preuve de vivacité (anti-spoofing) pour le FaceID. */
+  requireLiveness?: boolean;
 }
 
 @Entity('tracking_modules')

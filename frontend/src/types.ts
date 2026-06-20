@@ -27,6 +27,7 @@ export interface ModuleConfig {
   lateAfterMinutes?: number;
   requireCheckout?: boolean;
   faceMatchThreshold?: number;
+  requireLiveness?: boolean;
 }
 
 export interface TrackingModule {

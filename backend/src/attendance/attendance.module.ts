@@ -7,6 +7,7 @@ import { PersonsModule } from '../persons/persons.module';
 import { TrackingModulesModule } from '../tracking-modules/tracking-modules.module';
 import { RealtimeModule } from '../realtime/realtime.module';
 import { DevicesModule } from '../devices/devices.module';
+import { FaceModule } from '../face/face.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { DevicesModule } from '../devices/devices.module';
     TrackingModulesModule,
     RealtimeModule,
     DevicesModule,
+    FaceModule,
   ],
   providers: [AttendanceService],
   controllers: [AttendanceController],
