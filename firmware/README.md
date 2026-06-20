@@ -31,6 +31,21 @@ Borne de pointage multi-méthodes pour ESP32, pensée pour un fonctionnement
 
 > Illustration : [`docs/wiring-esp32.svg`](docs/wiring-esp32.svg)
 
+## Conception électronique (schéma + netlist + BOM)
+
+- 📐 **Schéma électronique** (symboles + labels de net, style KiCad) :
+  [`docs/schematic-esp32.svg`](docs/schematic-esp32.svg)
+- 🔗 **Netlist KiCad** (connectivité complète, importable) :
+  [`docs/pointage-esp32.net`](docs/pointage-esp32.net)
+- 🧾 **Nomenclature (BOM)** : [`docs/BOM.md`](docs/BOM.md) ·
+  [`docs/BOM.csv`](docs/BOM.csv)
+
+> Pour recréer le projet dans **KiCad** : créer le schéma en plaçant les mêmes
+> *Global Labels*, ou importer le netlist dans Pcbnew après association des
+> empreintes. Dans **Fritzing**, reproduire le schéma à partir de
+> `schematic-esp32.svg`. (Les binaires `.kicad_sch` / `.fzz` ne peuvent pas
+> être générés automatiquement ici.)
+
 ## Câblage (brochage par défaut, voir `src/config.h`)
 
 **RC522 (SPI)** : SDA/SS→GPIO5, SCK→18, MOSI→23, MISO→19, RST→4, 3V3, GND

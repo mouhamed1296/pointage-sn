@@ -1,0 +1,18 @@
+Variante,Designator,Quantite,Composant,Valeur_Specification,Boitier_Notes,Ref_exemple
+ESP32,U1,1,Carte microcontroleur,ESP32 DevKit v1 (WROOM-32),38 broches WiFi/BT,Espressif ESP32-DevKitC
+ESP32,U2,1,Lecteur RFID/NFC,RC522 MFRC522 13.56MHz,Module SPI,RC522
+ESP32,-,10,Badges RFID,MIFARE Classic 1K 13.56MHz,Carte ou porte-cle,MIFARE S50
+ESP32,U3,1,Capteur empreinte,AS608 ou R307 (UART optique),Logique 3.3V,AS608
+ESP32,U4,1,Ecran OLED,SSD1306 0.96in 128x64,I2C adresse 0x3C,SSD1306
+ESP32,SW1,1,Clavier matriciel,Membrane 4x4,8 fils,Keypad-4x4
+ESP32,BZ1,1,Buzzer actif,3.3-5V,Diametre 12mm,Buzzer-actif
+ESP32,D1,1,LED statut,LED 5mm verte,Through-hole,LED-5mm
+ESP32,R1,1,Resistance LED,220 ohm 0.25W,Through-hole,R-220
+ESP32,PS1,1,Alimentation,5V 2A USB,Micro-USB/USB-C,PSU-5V2A
+ESP32,-,1,Cablage,Fils Dupont + breadboard/PCB,Assortiment,Dupont-kit
+ESP32,-,1,Boitier (option),Coffret ABS + facade,Selon montage,Enclosure-ABS
+ESP32CAM,U10,1,Camera + MCU,ESP32-CAM AI-Thinker OV2640,PSRAM 4Mo,ESP32-CAM
+ESP32CAM,-,1,Programmateur,FTDI USB-TTL FT232 ou ESP32-CAM-MB,Pour le flash,FT232RL
+ESP32CAM,U11,1,Detecteur presence (option),PIR HC-SR501,Declenche capture,HC-SR501
+ESP32CAM,PS2,1,Alimentation,5V 2A dediee,Pics de courant camera,PSU-5V2A
+ESP32CAM,-,1,Antenne (option),Antenne externe IPEX,Si portee WiFi faible,Antenne-IPEX
