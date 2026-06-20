@@ -7,6 +7,8 @@ import { Dashboard } from './pages/Dashboard';
 import { Modules } from './pages/Modules';
 import { Persons } from './pages/Persons';
 import { Station } from './pages/Station';
+import { Cameras } from './pages/Cameras';
+import { Devices } from './pages/Devices';
 
 export default function App() {
   return (
@@ -23,6 +25,8 @@ export default function App() {
           >
             <Route path="/" element={<Dashboard />} />
             <Route path="/station" element={<Station />} />
+            <Route path="/cameras" element={<Cameras />} />
+            <Route path="/devices" element={<Devices />} />
             <Route path="/modules" element={<Modules />} />
             <Route path="/persons" element={<Persons />} />
           </Route>

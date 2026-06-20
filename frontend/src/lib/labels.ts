@@ -1,7 +1,9 @@
 import type {
   AttendanceDirection,
   AttendanceStatus,
+  CameraStreamType,
   ModuleType,
+  PointageMethod,
 } from '../types';
 
 export const MODULE_TYPE_LABEL: Record<ModuleType, string> = {
@@ -27,6 +29,20 @@ export const STATUS_COLOR: Record<AttendanceStatus, string> = {
 export const DIRECTION_LABEL: Record<AttendanceDirection, string> = {
   IN: 'Entrée',
   OUT: 'Sortie',
+};
+
+export const METHOD_LABEL: Record<PointageMethod, string> = {
+  FACE: '🙂 FaceID',
+  BADGE: '🪪 Badge',
+  FINGERPRINT: '👆 Empreinte',
+  CODE: '🔢 Code',
+  MANUAL: '✋ Manuel',
+};
+
+export const CAMERA_TYPE_LABEL: Record<CameraStreamType, string> = {
+  MJPEG: 'MJPEG',
+  HLS: 'HLS (.m3u8)',
+  WEBRTC: 'WebRTC',
 };
 
 export function formatTime(iso: string): string {

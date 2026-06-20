@@ -8,6 +8,7 @@ export default defineConfig({
     proxy: {
       // Proxy de l'API vers le backend NestJS en développement.
       '/api': 'http://localhost:3001',
+      '/socket.io': { target: 'http://localhost:3001', ws: true },
     },
   },
 });

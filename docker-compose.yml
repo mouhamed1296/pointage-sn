@@ -1,0 +1,59 @@
+# Déploiement 24h/24 — Pointage SN
+# Lancement : docker compose up -d --build
+# Les services redémarrent automatiquement (restart: always) et sont surveillés
+# par des healthchecks.
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: pointage
+      POSTGRES_PASSWORD: pointage
+      POSTGRES_DB: pointage
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pointage"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: ./backend
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PORT: 3001
+      CORS_ORIGIN: "*"
+      JWT_SECRET: "change-me-in-production"
+      DB_TYPE: postgres
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: pointage
+      DB_PASSWORD: pointage
+      DB_NAME: pointage
+      ADMIN_EMAIL: admin@pointage.sn
+      ADMIN_PASSWORD: changeme
+    healthcheck:
+      test:
+        ["CMD", "node", "-e",
+         "fetch('http://localhost:3001/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    expose:
+      - "3001"
+
+  frontend:
+    build: ./frontend
+    restart: always
+    depends_on:
+      - backend
+    ports:
+      - "8080:80"
+
+volumes:
+  db-data:

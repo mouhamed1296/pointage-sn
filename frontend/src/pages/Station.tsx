@@ -1,13 +1,17 @@
-import { useEffect, useRef, useState } from 'react';
+import { FormEvent, useEffect, useRef, useState } from 'react';
 import { api } from '../api/client';
 import type {
   AttendanceDirection,
   AttendanceEvent,
+  Camera,
   TrackingModule,
 } from '../types';
 import { Webcam, WebcamHandle } from '../components/Webcam';
+import { CameraView, CameraHandle } from '../components/CameraView';
 import { useFaceModels, detectDescriptor } from '../hooks/useFaceApi';
 import { DIRECTION_LABEL, STATUS_COLOR, STATUS_LABEL } from '../lib/labels';
+
+type Mode = 'face-webcam' | 'face-camera' | 'badge' | 'code';
 
 interface Result {
   ok: boolean;
@@ -18,41 +22,69 @@ interface Result {
 export function Station() {
   const [modules, setModules] = useState<TrackingModule[]>([]);
   const [moduleId, setModuleId] = useState('');
+  const [cameras, setCameras] = useState<Camera[]>([]);
+  const [cameraId, setCameraId] = useState('');
+  const [mode, setMode] = useState<Mode>('face-webcam');
   const [direction, setDirection] = useState<AttendanceDirection | ''>('');
   const [running, setRunning] = useState(false);
   const [result, setResult] = useState<Result | null>(null);
+  const [codeInput, setCodeInput] = useState('');
+  const [badgeInput, setBadgeInput] = useState('');
 
   const webcamRef = useRef<WebcamHandle>(null);
+  const cameraRef = useRef<CameraHandle>(null);
   const { ready, error: modelError } = useFaceModels();
   const busyRef = useRef(false);
   const cooldownRef = useRef(0);
 
   useEffect(() => {
     api.get<TrackingModule[]>('/tracking-modules').then((res) => {
-      setModules(res.data.filter((m) => m.active));
-      if (res.data.length) setModuleId(res.data[0].id);
+      const active = res.data.filter((m) => m.active);
+      setModules(active);
+      if (active.length) setModuleId(active[0].id);
     });
   }, []);
 
-  // Boucle de détection automatique toutes les ~1,5 s.
+  // Charge les caméras FaceID du module sélectionné.
   useEffect(() => {
-    if (!running || !ready || !moduleId) return;
+    if (!moduleId) return;
+    api
+      .get<Camera[]>('/cameras', { params: { moduleId } })
+      .then((res) => {
+        const cams = res.data.filter((c) => c.faceRecognition && c.active);
+        setCameras(cams);
+        setCameraId(cams[0]?.id ?? '');
+      });
+  }, [moduleId]);
+
+  const isFaceMode = mode === 'face-webcam' || mode === 'face-camera';
+  const selectedCamera = cameras.find((c) => c.id === cameraId);
+
+  function showResult(data: any) {
+    setResult({ ok: true, event: data.attendance });
+    cooldownRef.current = Date.now() + 4000;
+  }
+
+  // Boucle de reconnaissance faciale (webcam ou caméra IP).
+  useEffect(() => {
+    if (!running || !isFaceMode || !ready || !moduleId) return;
     const interval = setInterval(async () => {
       if (busyRef.current || Date.now() < cooldownRef.current) return;
-      const video = webcamRef.current?.video;
-      if (!video) return;
+      const el =
+        mode === 'face-webcam'
+          ? webcamRef.current?.video
+          : cameraRef.current?.element;
+      if (!el) return;
       busyRef.current = true;
       try {
-        const descriptor = await detectDescriptor(video);
+        const descriptor = await detectDescriptor(el);
         if (!descriptor) return;
         const res = await api.post('/attendance/recognize', {
           moduleId,
           descriptor,
           direction: direction || undefined,
         });
-        setResult({ ok: true, event: res.data.attendance });
-        // Pause de 4 s après un pointage réussi pour éviter les doublons.
-        cooldownRef.current = Date.now() + 4000;
+        showResult(res.data);
       } catch (e: any) {
         if (e.response?.status === 404) {
           setResult({ ok: false, message: 'Visage non reconnu' });
@@ -63,14 +95,71 @@ export function Station() {
       }
     }, 1500);
     return () => clearInterval(interval);
-  }, [running, ready, moduleId, direction]);
+  }, [running, isFaceMode, mode, ready, moduleId, direction]);
+
+  async function submitIdentifier(
+    method: 'BADGE' | 'CODE',
+    identifier: string,
+  ) {
+    if (!identifier) return;
+    try {
+      const res = await api.post('/attendance/by-identifier', {
+        moduleId,
+        method,
+        identifier,
+        direction: direction || undefined,
+      });
+      showResult(res.data);
+    } catch (e: any) {
+      setResult({
+        ok: false,
+        message:
+          e.response?.status === 404
+            ? method === 'BADGE'
+              ? 'Badge inconnu'
+              : 'Code incorrect'
+            : 'Erreur',
+      });
+    }
+  }
+
+  function onCode(e: FormEvent) {
+    e.preventDefault();
+    submitIdentifier('CODE', codeInput);
+    setCodeInput('');
+  }
+  function onBadge(e: FormEvent) {
+    e.preventDefault();
+    submitIdentifier('BADGE', badgeInput);
+    setBadgeInput('');
+  }
 
   return (
     <div>
       <h1>📷 Borne de pointage</h1>
-      <p className="muted">
-        Présentez votre visage face à la caméra : le pointage est automatique.
-      </p>
+
+      <div className="tabs">
+        {(
+          [
+            ['face-webcam', '🙂 FaceID (webcam)'],
+            ['face-camera', '🎥 FaceID (caméra)'],
+            ['badge', '🪪 Badge'],
+            ['code', '🔢 Code'],
+          ] as [Mode, string][]
+        ).map(([m, label]) => (
+          <button
+            key={m}
+            className={mode === m ? 'tab active' : 'tab'}
+            onClick={() => {
+              setMode(m);
+              setRunning(false);
+              setResult(null);
+            }}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
 
       <div className="station-controls">
         <label className="inline">
@@ -99,24 +188,90 @@ export function Station() {
             <option value="OUT">Sortie</option>
           </select>
         </label>
-        <button
-          className={running ? 'btn-ghost danger' : 'btn'}
-          onClick={() => setRunning((r) => !r)}
-          disabled={!ready || !moduleId}
-        >
-          {running ? '⏹️ Arrêter' : '▶️ Démarrer la borne'}
-        </button>
+        {mode === 'face-camera' && (
+          <label className="inline">
+            Caméra&nbsp;
+            <select
+              value={cameraId}
+              onChange={(e) => setCameraId(e.target.value)}
+            >
+              {cameras.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
+        {isFaceMode && (
+          <button
+            className={running ? 'btn-ghost danger' : 'btn'}
+            onClick={() => setRunning((r) => !r)}
+            disabled={
+              !ready ||
+              !moduleId ||
+              (mode === 'face-camera' && !selectedCamera)
+            }
+          >
+            {running ? '⏹️ Arrêter' : '▶️ Démarrer'}
+          </button>
+        )}
       </div>
 
-      {modelError && <div className="error">{modelError}</div>}
-      {!ready && !modelError && (
+      {isFaceMode && modelError && <div className="error">{modelError}</div>}
+      {isFaceMode && !ready && !modelError && (
         <div className="info">Chargement des modèles de reconnaissance…</div>
       )}
 
       <div className="grid-2">
         <div className="card station-cam">
-          <Webcam ref={webcamRef} />
-          {running && <div className="scanning">🔍 Détection en cours…</div>}
+          {mode === 'face-webcam' && <Webcam ref={webcamRef} />}
+          {mode === 'face-camera' &&
+            (selectedCamera ? (
+              <CameraView ref={cameraRef} camera={selectedCamera} />
+            ) : (
+              <p className="muted">
+                Aucune caméra FaceID pour ce module. Ajoutez-en une dans
+                l’onglet Caméras (option « pointage par reconnaissance
+                faciale »).
+              </p>
+            ))}
+          {mode === 'badge' && (
+            <form onSubmit={onBadge} className="form pad">
+              <label>
+                UID du badge
+                <input
+                  autoFocus
+                  value={badgeInput}
+                  onChange={(e) => setBadgeInput(e.target.value)}
+                  placeholder="Scannez ou saisissez l’UID"
+                />
+              </label>
+              <button className="btn">Valider</button>
+              <p className="muted small">
+                En production, les badges sont lus par la borne ESP32. Ce champ
+                permet les tests.
+              </p>
+            </form>
+          )}
+          {mode === 'code' && (
+            <form onSubmit={onCode} className="form pad">
+              <label>
+                Code PIN
+                <input
+                  autoFocus
+                  type="password"
+                  value={codeInput}
+                  onChange={(e) => setCodeInput(e.target.value)}
+                  placeholder="Code à 4-12 chiffres"
+                />
+              </label>
+              <button className="btn">Valider</button>
+            </form>
+          )}
+          {running && isFaceMode && (
+            <div className="scanning">🔍 Détection en cours…</div>
+          )}
         </div>
 
         <div className="card">
@@ -135,9 +290,11 @@ export function Station() {
                 {DIRECTION_LABEL[result.event.direction]} —{' '}
                 {STATUS_LABEL[result.event.status]}
               </div>
-              <div className="muted small">
-                Confiance : {(result.event.confidence * 100).toFixed(0)}%
-              </div>
+              {result.event.method === 'FACE' && (
+                <div className="muted small">
+                  Confiance : {(result.event.confidence * 100).toFixed(0)}%
+                </div>
+              )}
             </div>
           )}
           {result && !result.ok && (

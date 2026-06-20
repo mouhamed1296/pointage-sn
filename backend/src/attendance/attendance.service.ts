@@ -11,7 +11,12 @@ import { PersonsService } from '../persons/persons.service';
 import { TrackingModulesService } from '../tracking-modules/tracking-modules.service';
 import { RealtimeGateway } from '../realtime/realtime.gateway';
 import { findBestMatch } from './face-match.util';
-import { RecognizeDto, ManualAttendanceDto } from './dto/attendance.dto';
+import {
+  RecognizeDto,
+  ManualAttendanceDto,
+  DeviceAttendanceDto,
+} from './dto/attendance.dto';
+import { Device } from '../devices/device.entity';
 import {
   AttendanceDirection,
   AttendanceStatus,
@@ -56,6 +61,66 @@ export class AttendanceService {
       confidence,
       dto.direction,
     );
+  }
+
+  /**
+   * Pointage émis par une borne ESP32 : badge RFID, empreinte ou code PIN.
+   * Le module est celui rattaché à la borne.
+   */
+  async recordFromDevice(device: Device, dto: DeviceAttendanceDto) {
+    return this.recordByIdentifier(device.moduleId, dto);
+  }
+
+  /**
+   * Résout une personne dans un module via badge / code / empreinte, puis
+   * enregistre le pointage. Utilisé par les bornes ESP32 et la borne web.
+   */
+  async recordByIdentifier(moduleId: string, dto: DeviceAttendanceDto) {
+    const module = await this.modulesService.findOne(moduleId);
+
+    let person: Person | null = null;
+    switch (dto.method) {
+      case PointageMethod.BADGE:
+        if (!dto.identifier) {
+          throw new BadRequestException('UID de badge manquant');
+        }
+        person = await this.personsService.findByBadge(
+          module.id,
+          dto.identifier,
+        );
+        break;
+      case PointageMethod.CODE:
+        if (!dto.identifier) {
+          throw new BadRequestException('Code PIN manquant');
+        }
+        person = await this.personsService.findByPinCode(
+          module.id,
+          dto.identifier,
+        );
+        break;
+      case PointageMethod.FINGERPRINT:
+        if (dto.fingerprintId == null) {
+          throw new BadRequestException("Index d'empreinte manquant");
+        }
+        person = await this.personsService.findByFingerprint(
+          module.id,
+          dto.fingerprintId,
+        );
+        break;
+      default:
+        throw new BadRequestException(
+          `Méthode ${dto.method} non gérée par une borne`,
+        );
+    }
+
+    if (!person) {
+      throw new NotFoundException({
+        message: 'Aucune personne ne correspond',
+        recognized: false,
+      });
+    }
+
+    return this.record(person, module, dto.method, 1, dto.direction);
   }
 
   /** Pointage manuel via sélection de la personne. */

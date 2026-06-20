@@ -15,6 +15,8 @@ export function Layout() {
             📊 Tableau de bord
           </NavLink>
           <NavLink to="/station">📷 Borne de pointage</NavLink>
+          <NavLink to="/cameras">🎥 Caméras</NavLink>
+          <NavLink to="/devices">🖥️ Bornes</NavLink>
           <NavLink to="/modules">🗂️ Modules</NavLink>
           <NavLink to="/persons">👥 Personnes</NavLink>
         </nav>

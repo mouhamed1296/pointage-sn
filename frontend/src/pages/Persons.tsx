@@ -12,6 +12,9 @@ export function Persons() {
   const [fullName, setFullName] = useState('');
   const [externalId, setExternalId] = useState('');
   const [email, setEmail] = useState('');
+  const [badgeId, setBadgeId] = useState('');
+  const [pinCode, setPinCode] = useState('');
+  const [fingerprintId, setFingerprintId] = useState('');
   const [descriptor, setDescriptor] = useState<number[] | null>(null);
   const [capturing, setCapturing] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -66,11 +69,17 @@ export function Persons() {
         fullName,
         externalId: externalId || undefined,
         email: email || undefined,
+        badgeId: badgeId || undefined,
+        pinCode: pinCode || undefined,
+        fingerprintId: fingerprintId ? Number(fingerprintId) : undefined,
         faceDescriptor: descriptor || undefined,
       });
       setFullName('');
       setExternalId('');
       setEmail('');
+      setBadgeId('');
+      setPinCode('');
+      setFingerprintId('');
       setDescriptor(null);
       setMessage('✅ Personne enregistrée.');
       loadPersons(moduleId);
@@ -140,6 +149,33 @@ export function Persons() {
                 onChange={(e) => setEmail(e.target.value)}
               />
             </label>
+            <div className="row">
+              <label>
+                🪪 UID badge
+                <input
+                  value={badgeId}
+                  onChange={(e) => setBadgeId(e.target.value)}
+                  placeholder="04A2B3C4"
+                />
+              </label>
+              <label>
+                🔢 Code PIN
+                <input
+                  value={pinCode}
+                  onChange={(e) => setPinCode(e.target.value)}
+                  placeholder="4 à 12 chiffres"
+                />
+              </label>
+              <label>
+                👆 ID empreinte
+                <input
+                  type="number"
+                  value={fingerprintId}
+                  onChange={(e) => setFingerprintId(e.target.value)}
+                  placeholder="1-127"
+                />
+              </label>
+            </div>
             <div className="muted small">
               {descriptor
                 ? '🟢 Donnée biométrique prête'

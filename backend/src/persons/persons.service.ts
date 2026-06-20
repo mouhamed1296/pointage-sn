@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import * as bcrypt from 'bcryptjs';
 import { Person } from './person.entity';
 import { CreatePersonDto, UpdatePersonDto } from './dto/person.dto';
 
@@ -18,7 +19,7 @@ export class PersonsService {
     });
   }
 
-  /** Personnes d'un module disposant d'un descripteur facial enrôlé. */
+  /** Personnes actives d'un module (pour la reconnaissance faciale). */
   findEnrolledByModule(moduleId: string): Promise<Person[]> {
     return this.repo.find({ where: { moduleId, active: true } });
   }
@@ -31,14 +32,63 @@ export class PersonsService {
     return person;
   }
 
-  create(dto: CreatePersonDto): Promise<Person> {
-    const person = this.repo.create(dto);
+  /** Recherche par UID de badge dans un module (méthode BADGE). */
+  findByBadge(moduleId: string, badgeId: string): Promise<Person | null> {
+    return this.repo.findOne({
+      where: { moduleId, badgeId, active: true },
+    });
+  }
+
+  /** Recherche par index d'empreinte dans un module (méthode FINGERPRINT). */
+  findByFingerprint(
+    moduleId: string,
+    fingerprintId: number,
+  ): Promise<Person | null> {
+    return this.repo.findOne({
+      where: { moduleId, fingerprintId, active: true },
+    });
+  }
+
+  /**
+   * Recherche par code PIN dans un module (méthode CODE).
+   * Les codes étant hachés, on compare le code fourni à chaque empreinte.
+   */
+  async findByPinCode(
+    moduleId: string,
+    pinCode: string,
+  ): Promise<Person | null> {
+    const candidates = await this.repo
+      .createQueryBuilder('p')
+      .addSelect('p.pinCodeHash')
+      .where('p.moduleId = :moduleId', { moduleId })
+      .andWhere('p.active = :active', { active: true })
+      .andWhere('p.pinCodeHash IS NOT NULL')
+      .getMany();
+
+    for (const person of candidates) {
+      if (person.pinCodeHash && (await bcrypt.compare(pinCode, person.pinCodeHash))) {
+        return person;
+      }
+    }
+    return null;
+  }
+
+  async create(dto: CreatePersonDto): Promise<Person> {
+    const { pinCode, ...rest } = dto;
+    const person = this.repo.create(rest);
+    if (pinCode) {
+      person.pinCodeHash = await bcrypt.hash(pinCode, 10);
+    }
     return this.repo.save(person);
   }
 
   async update(id: string, dto: UpdatePersonDto): Promise<Person> {
     const person = await this.findOne(id);
-    Object.assign(person, dto);
+    const { pinCode, ...rest } = dto;
+    Object.assign(person, rest);
+    if (pinCode) {
+      person.pinCodeHash = await bcrypt.hash(pinCode, 10);
+    }
     return this.repo.save(person);
   }
 

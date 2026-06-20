@@ -6,7 +6,13 @@ export type AttendanceStatus =
   | 'LATE'
   | 'EARLY_LEAVE'
   | 'PRESENT';
-export type PointageMethod = 'FACE' | 'MANUAL';
+export type PointageMethod =
+  | 'FACE'
+  | 'BADGE'
+  | 'FINGERPRINT'
+  | 'CODE'
+  | 'MANUAL';
+export type CameraStreamType = 'MJPEG' | 'HLS' | 'WEBRTC';
 
 export interface AuthUser {
   id: string;
@@ -39,8 +45,52 @@ export interface Person {
   externalId?: string;
   email?: string;
   faceDescriptor: number[] | null;
+  badgeId?: string;
+  fingerprintId?: number | null;
   active: boolean;
   moduleId: string;
+  createdAt: string;
+}
+
+export interface Device {
+  id: string;
+  name: string;
+  location?: string;
+  moduleId: string;
+  methods: PointageMethod[] | null;
+  lastSeenAt: string | null;
+  firmwareVersion?: string;
+  active: boolean;
+  online: boolean;
+  createdAt: string;
+}
+
+export interface DeviceStatus {
+  id: string;
+  name: string;
+  location?: string;
+  moduleId: string;
+  online: boolean;
+  lastSeenAt: string | null;
+}
+
+export interface DeviceAlert {
+  deviceId: string;
+  name: string;
+  online: boolean;
+  message: string;
+  at: string;
+}
+
+export interface Camera {
+  id: string;
+  name: string;
+  location?: string;
+  streamUrl: string;
+  streamType: CameraStreamType;
+  faceRecognition: boolean;
+  moduleId: string | null;
+  active: boolean;
   createdAt: string;
 }
 

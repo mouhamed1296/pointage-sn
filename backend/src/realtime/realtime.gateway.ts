@@ -58,4 +58,14 @@ export class RealtimeGateway
     this.server.emit('attendance:created', payload);
     this.server.to(`module:${moduleId}`).emit('attendance:module', payload);
   }
+
+  /** Diffuse l'état des bornes (supervision 24h/24). */
+  emitDeviceStatus(payload: unknown) {
+    this.server.emit('devices:status', payload);
+  }
+
+  /** Alerte quand une borne passe hors ligne / revient en ligne. */
+  emitDeviceAlert(payload: unknown) {
+    this.server.emit('devices:alert', payload);
+  }
 }
