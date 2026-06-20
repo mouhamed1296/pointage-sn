@@ -25,6 +25,12 @@ Borne de pointage multi-méthodes pour ESP32, pensée pour un fonctionnement
 | Clavier | Matriciel 4×4 | GPIO |
 | Écran | OLED SSD1306 128×64 | I2C |
 
+## Schéma de câblage
+
+![Schéma de câblage ESP32](docs/wiring-esp32.svg)
+
+> Illustration : [`docs/wiring-esp32.svg`](docs/wiring-esp32.svg)
+
 ## Câblage (brochage par défaut, voir `src/config.h`)
 
 **RC522 (SPI)** : SDA/SS→GPIO5, SCK→18, MOSI→23, MISO→19, RST→4, 3V3, GND

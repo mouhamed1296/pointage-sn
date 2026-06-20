@@ -1,0 +1,94 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="760" viewBox="0 0 1100 760" font-family="Segoe UI, Arial, sans-serif">
+  <defs>
+    <filter id="sh" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#0f172a" flood-opacity="0.18"/>
+    </filter>
+    <style>
+      .title{font-size:26px;font-weight:700;fill:#0f172a}
+      .sub{font-size:15px;fill:#64748b}
+      .mod{font-size:18px;font-weight:700;fill:#0f172a}
+      .pin{font-size:15px;fill:#0f172a}
+      .gpio{font-size:15px;font-weight:700}
+      .note{font-size:13px;fill:#64748b}
+      .wire{stroke-width:4;fill:none}
+      .lbl{font-size:13px;font-weight:700;fill:#fff}
+    </style>
+  </defs>
+
+  <rect width="1100" height="760" fill="#f8fafc"/>
+  <text x="40" y="48" class="title">Borne FaceID ESP32-CAM — câblage</text>
+  <text x="40" y="74" class="sub">Capture JPEG → envoi WiFi au backend (reconnaissance serveur). Carte AI-Thinker.</text>
+
+  <!-- ESP32-CAM board -->
+  <g filter="url(#sh)"><rect x="430" y="150" width="240" height="300" rx="14" fill="#1e293b"/></g>
+  <text x="550" y="185" text-anchor="middle" fill="#ecfeff" font-size="18" font-weight="700">ESP32-CAM</text>
+  <rect x="495" y="200" width="110" height="80" rx="8" fill="#0f172a" stroke="#334155"/>
+  <circle cx="550" cy="240" r="28" fill="#0b1220" stroke="#475569" stroke-width="3"/>
+  <circle cx="550" cy="240" r="12" fill="#1d4ed8"/>
+  <text x="550" y="305" text-anchor="middle" fill="#94a3b8" font-size="12">OV2640</text>
+  <!-- header pins on left -->
+  <g fill="#cbd5e1" font-size="13" text-anchor="end">
+    <text x="425" y="345">5V</text>
+    <text x="425" y="368">GND</text>
+    <text x="425" y="391">U0R (RX/GPIO3)</text>
+    <text x="425" y="414">U0T (TX/GPIO1)</text>
+  </g>
+  <g fill="#cbd5e1" font-size="13">
+    <text x="675" y="345">GPIO0</text>
+    <text x="675" y="368">GND</text>
+    <text x="675" y="391">GPIO13 (PIR opt.)</text>
+  </g>
+  <circle cx="430" cy="340" r="5" fill="#e11d48"/>
+  <circle cx="430" cy="363" r="5" fill="#111827"/>
+  <circle cx="430" cy="386" r="5" fill="#16a34a"/>
+  <circle cx="430" cy="409" r="5" fill="#16a34a"/>
+  <circle cx="670" cy="340" r="5" fill="#f59e0b"/>
+  <circle cx="670" cy="363" r="5" fill="#111827"/>
+  <circle cx="670" cy="386" r="5" fill="#ea580c"/>
+
+  <!-- FTDI programmer -->
+  <g filter="url(#sh)"><rect x="60" y="270" width="250" height="190" rx="12" fill="#fff" stroke="#e2e8f0"/></g>
+  <text x="80" y="300" class="mod">🔌 Programmateur FTDI</text>
+  <text x="80" y="322" class="note">(uniquement pour flasher — 3V3 réglé sur 5V)</text>
+  <g class="pin">
+    <text x="80" y="352">5V</text>      <text x="290" y="352" text-anchor="end" class="gpio" fill="#e11d48">→ 5V</text>
+    <text x="80" y="376">GND</text>     <text x="290" y="376" text-anchor="end" class="gpio" fill="#111827">→ GND</text>
+    <text x="80" y="400">TX</text>      <text x="290" y="400" text-anchor="end" class="gpio" fill="#16a34a">→ U0R</text>
+    <text x="80" y="424">RX</text>      <text x="290" y="424" text-anchor="end" class="gpio" fill="#16a34a">→ U0T</text>
+  </g>
+  <path class="wire" stroke="#e11d48" d="M310,348 C370,344 390,342 430,340"/>
+  <path class="wire" stroke="#111827" d="M310,372 C370,367 390,365 430,363"/>
+  <path class="wire" stroke="#16a34a" d="M310,398 C360,392 380,388 430,386"/>
+  <path class="wire" stroke="#16a34a" d="M310,420 C360,415 380,412 430,409"/>
+
+  <!-- Flash jumper -->
+  <g filter="url(#sh)"><rect x="760" y="290" width="290" height="120" rx="12" fill="#fff" stroke="#e2e8f0"/></g>
+  <text x="780" y="320" class="mod">⚙️ Mode flash</text>
+  <text x="780" y="346" class="pin">Relier <tspan font-weight="700" fill="#ea580c">GPIO0 → GND</tspan> pendant l'upload,</text>
+  <text x="780" y="368" class="pin">puis retirer le jumper et appuyer RESET</text>
+  <text x="780" y="390" class="pin">pour exécuter le firmware.</text>
+  <path class="wire" stroke="#f59e0b" d="M670,340 C710,330 730,332 760,335"/>
+
+  <!-- PIR optional -->
+  <g filter="url(#sh)"><rect x="760" y="450" width="290" height="120" rx="12" fill="#fff" stroke="#e2e8f0"/></g>
+  <text x="780" y="480" class="mod">🚶 PIR (optionnel)</text>
+  <g class="pin">
+    <text x="780" y="508">OUT</text><text x="1030" y="508" text-anchor="end" class="gpio" fill="#ea580c">GPIO13</text>
+    <text x="780" y="530">VCC</text><text x="1030" y="530" text-anchor="end" fill="#e11d48">5V</text>
+    <text x="780" y="552">GND</text><text x="1030" y="552" text-anchor="end" fill="#111827">GND</text>
+  </g>
+  <path class="wire" stroke="#ea580c" d="M760,505 C720,470 700,420 670,390"/>
+
+  <!-- WiFi to backend -->
+  <g filter="url(#sh)"><rect x="430" y="540" width="380" height="120" rx="12" fill="#ecfeff" stroke="#a5f3fc"/></g>
+  <text x="450" y="572" class="mod">📡 Liaison WiFi → Backend</text>
+  <text x="450" y="600" class="pin">POST image/jpeg →</text>
+  <text x="450" y="600" class="pin" dx="160" font-weight="700" fill="#0e7490">/api/attendance/face-frame</text>
+  <text x="450" y="624" class="note">En-têtes : X-Device-Id, X-Device-Key</text>
+  <text x="450" y="646" class="note">Heartbeat → /api/devices/heartbeat</text>
+  <path class="wire" stroke="#06b6d4" stroke-dasharray="8 6" d="M560,450 C575,490 580,510 590,540"/>
+
+  <text x="60" y="610" class="note">⚠️ Alimenter en 5V stable (la caméra consomme des pics</text>
+  <text x="60" y="630" class="note">de courant) ; un FTDI seul peut être insuffisant en usage 24/7.</text>
+  <text x="60" y="650" class="note">Privilégier une alim 5V/2A dédiée pour le fonctionnement.</text>
+</svg>

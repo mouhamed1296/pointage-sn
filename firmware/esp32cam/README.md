@@ -27,6 +27,12 @@ npm run download-face-models
 (créés dans l'interface web > *Bornes*). Le module rattaché à la borne
 détermine les personnes comparées.
 
+## Schéma de câblage
+
+![Schéma ESP32-CAM](../docs/wiring-esp32cam.svg)
+
+> Illustration : [`../docs/wiring-esp32cam.svg`](../docs/wiring-esp32cam.svg)
+
 ## Flash (PlatformIO)
 ```bash
 cd firmware/esp32cam
